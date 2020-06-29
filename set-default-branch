@@ -1,0 +1,55 @@
+#!/bin/bash
+#
+# Set default branch for repository on GitLab
+#
+# This script uses the GitLab REST API and requires an access token.
+# The token is obtained from the GitLab profile page -> Access Tokens
+# (https://gitlab.com/profile/personal_access_tokens).
+# The token is in the environment variable GITLAB_TOKEN
+# or has to be sourced from the ~/.gitlabrc file and assigned
+# to the GITLAB_TOKEN variable:
+#
+#   GITLAB_TOKEN=""
+#
+
+GITLAB_URL="https://gitlab.com/api/v4"
+GITLAB_GROUP=calyxos
+GITLAB_GROUP_ID=3642190
+
+set -e
+
+if ! which jq >/dev/null
+then
+        echo "You need to apt install jq" >&2
+        exit 1
+fi
+
+if [ -z "$1" ]; then
+    echo "Usage: ./set-default-branch <name> <branch>"
+    exit 1;
+fi
+
+check_return_code() {
+    if [ $? -ne 0 ]; then
+        echo
+        echo "Something went wrong!"
+        exit 1
+    fi
+}
+
+test -n "$GITLAB_TOKEN" || . ~/.gitlabrc
+
+PROJECT=$1
+BRANCH=$2
+
+# -----------------------------------------------------------------------------
+
+echo "Setting the default branch to ${BRANCH} for ${PROJECT} repository..."
+
+RESPONSE=$(curl -s --request PUT "$GITLAB_URL/projects/$GITLAB_GROUP%2F$PROJECT?private_token=$GITLAB_TOKEN" \
+  --data "default_branch=$BRANCH")
+
+echo $RESPONSE | jq --exit-status .default_branch > /dev/null
+check_return_code
+
+echo "Default branch set."
