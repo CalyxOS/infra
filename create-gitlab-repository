@@ -46,7 +46,7 @@ PROJECT=$1
 echo "Creating the ${PROJECT} repository..."
 
 RESPONSE=$(curl -s "$GITLAB_URL/projects?private_token=$GITLAB_TOKEN" \
-  --data "path=$PROJECT&namespace_id=$GITLAB_GROUP_ID&visibility=public&auto_devops_enabled=false&merge_method=ff")
+  --data "path=$PROJECT&namespace_id=$GITLAB_GROUP_ID&visibility=public&auto_devops_enabled=false&merge_method=ff&issues_access_level=disabled")
 
 echo $RESPONSE | jq --exit-status .id > /dev/null
 check_return_code
