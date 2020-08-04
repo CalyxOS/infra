@@ -1,0 +1,55 @@
+#!/bin/bash
+#
+# Create a new Git repository on GitLab
+#
+# This script uses the GitLab REST API and requires an access token.
+# The token is obtained from the GitLab profile page -> Access Tokens
+# (https://gitlab.com/profile/personal_access_tokens).
+# The token is in the environment variable GITLAB_TOKEN
+# or has to be sourced from the ~/.gitlabrc file and assigned
+# to the GITLAB_TOKEN variable:
+#
+#   GITLAB_TOKEN=""
+#
+
+GITLAB_URL="https://gitlab.com/api/v4"
+GITLAB_GROUP=calyxos # /weblate
+GITLAB_GROUP_ID=8728247
+
+set -e
+
+if ! which jq >/dev/null
+then
+        echo "You need to apt install jq" >&2
+        exit 1
+fi
+
+if [ -z "$1" ]; then
+    echo "Usage: ./create-weblate-repository <name>"
+    exit 1;
+fi
+
+check_return_code() {
+    if [ $? -ne 0 ]; then
+        echo
+        echo "Something went wrong!"
+        exit 1
+    fi
+}
+
+test -n "$GITLAB_TOKEN" || . ~/.gitlabrc
+
+PROJECT=$1
+
+# -----------------------------------------------------------------------------
+
+echo "Creating the ${PROJECT} weblate repository..."
+
+RESPONSE=$(curl -s "$GITLAB_URL/projects?private_token=$GITLAB_TOKEN" \
+  --data "path=$PROJECT&namespace_id=$GITLAB_GROUP_ID&visibility=public&auto_devops_enabled=false&merge_method=ff&issues_access_level=disabled")
+
+echo $RESPONSE | jq --exit-status .id > /dev/null
+check_return_code
+
+PROJECT_ID=$(echo $RESPONSE | jq '.id')
+echo "Created. Project ID: $PROJECT_ID"
